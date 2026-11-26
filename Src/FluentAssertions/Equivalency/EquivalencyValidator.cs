@@ -11,6 +11,8 @@ namespace FluentAssertions.Equivalency
     /// </summary>
     public class EquivalencyValidator : IEquivalencyValidator
     {
+        private const string CyclicReferenceDetectorKey = "cyclic_reference_detector";
+
         #region Private Definitions
 
         private readonly IEquivalencyAssertionOptions config;
@@ -59,23 +61,23 @@ namespace FluentAssertions.Equivalency
 
             AssertionScope.Current.TrackComparands(context.Subject, context.Expectation);
 
-            var objectTracker = AssertionScope.Current.Get<CyclicReferenceDetector>("cyclic_reference_detector");
+            var objectTracker = AssertionScope.Current.Get<CyclicReferenceDetector>(CyclicReferenceDetectorKey);
             if (objectTracker is null)
             {
                 objectTracker = new CyclicReferenceDetector(config.CyclicReferenceHandling);
-                AssertionScope.Current.AddNonReportable("cyclic_reference_detector", objectTracker);
+                AssertionScope.Current.AddNonReportable(CyclicReferenceDetectorKey, objectTracker);
             }
 
-            var result = false;
+            var isComplexType = false;
             var type = context.Expectation?.GetType();
 
-            if (type != null && !isComplexTypeMap.TryGetValue(type, out result))
+            if (type != null && !isComplexTypeMap.TryGetValue(type, out isComplexType))
             {
-                result = !type.OverridesEquals();
-                isComplexTypeMap[type] = result;
+                isComplexType = !type.OverridesEquals();
+                isComplexTypeMap[type] = isComplexType;
             }
 
-            var reference = new ObjectReference(context.Expectation, context.SelectedMemberPath, result);
+            var reference = new ObjectReference(context.Expectation, context.SelectedMemberPath, isComplexType);
             if (objectTracker.IsCyclicReference(reference, context.Because, context.BecauseArgs))
             {
                 return;
