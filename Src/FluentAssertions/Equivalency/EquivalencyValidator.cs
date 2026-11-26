@@ -76,16 +76,18 @@ namespace FluentAssertions.Equivalency
             }
 
             var reference = new ObjectReference(context.Expectation, context.SelectedMemberPath, result);
-            if (!objectTracker.IsCyclicReference(reference, context.Because, context.BecauseArgs))
+            if (objectTracker.IsCyclicReference(reference, context.Because, context.BecauseArgs))
             {
-                var wasHandled = AssertionOptions.EquivalencySteps
-                    .Where(step => step.CanHandle(context, config))
-                    .Any(step => step.Handle(context, this, config));
+                return;
+            }
 
-                if (!wasHandled)
-                {
-                    Execute.Assertion.FailWith("No IEquivalencyStep was found to handle the context. ");
-                }
+            var wasHandled = AssertionOptions.EquivalencySteps
+                .Where(step => step.CanHandle(context, config))
+                .Any(step => step.Handle(context, this, config));
+
+            if (!wasHandled)
+            {
+                Execute.Assertion.FailWith("No IEquivalencyStep was found to handle the context. ");
             }
         }
     }
